@@ -5,6 +5,6 @@ The result is based on the computation of a minimum cut in a particular graph, a
 
 To run this code, you first need to go to http://lemon.cs.elte.hu/trac/lemon and install LEMON. You also need [Boost](https://www.boost.org/).
 
-To compile this project, use `g++ -std=c++14 -O2 verifier.cpp -o verifier`. You can then run the program using `./verifier`.
+To compile this project, use `g++ -std=c++14 -O2 main.cpp -o main`. You can then run the program using `./main`.
 
 I would like to thank [Jaehyun Park](https://github.com/jaehyunp) for the convenient simplex implementation, which I have modified to use exact rational numbers instead of floating-point numbers.
