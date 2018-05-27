@@ -15,6 +15,9 @@ class PartialAssignment {
     public:
 
     PartialAssignment(std::map<Node, bool> assignment) {
+        for (long long i = 0; i < (1LL<<dimension); i++) {
+            assigned[i] = false;
+        }
         for (const auto& node : assignment) {
             assigned[node.first.getIndex()] = true;
             value[node.first.getIndex()] = node.second;

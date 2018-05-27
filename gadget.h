@@ -26,4 +26,8 @@ class Gadget {
     T getTotalWeight() const {
         return totalWeight;
     }
+
+    bool operator==(const Gadget& other) {
+        return weight == other.weight;
+    }
 };

@@ -54,7 +54,7 @@ class OrbitInfo {
 
     public:
 
-    Node chi (uint32_t S) {
+    Node chi (uint32_t S) const {
         uint32_t z = 0;
         for (unsigned i = 0; i < k; i++) {
             if (S&(1<<i)) {
@@ -83,7 +83,30 @@ class OrbitInfo {
         }
     }
 
-    std::vector<std::vector<Node>> getAllOrbits() {
+    std::vector<Node> getAllNodes() const {
+        std::vector<Node> nodes;
+        for (long long index = 0; index < (1<<dimension); index++) {
+            nodes.emplace_back(index);
+        }
+        return nodes;
+    }
+
+    std::vector<Edge> getAllEdges() const {
+        std::vector<Edge> edges;
+        for (long long index = 0; index < (1LL<<dimension); index++) {
+            Node node((uint32_t)index);
+            for (unsigned direction = 0; direction < dimension; direction++) {
+                if (index&(1LL<<direction)) {
+                    continue;
+                }
+                auto destination = node.getNeighbour(direction);
+                edges.emplace_back(node, destination);
+            }
+        }
+        return edges;
+    }
+
+    std::vector<std::vector<Node>> getAllNodeOrbits() const {
         std::vector<std::vector<Node>> allOrbits(numNodeTypes);
         for (size_t node = 0; node < nodeType.size(); node++) {
             allOrbits[nodeType[node]].emplace_back(node);
@@ -91,7 +114,25 @@ class OrbitInfo {
         return allOrbits;
     }
 
-    std::vector<Node> getOrbit(const Node& representative) {
+    std::vector<std::vector<Edge>> getAllEdgeOrbits() const {
+        std::set<Edge> edgesAdded;
+        std::vector<std::vector<Edge>> allOrbits;
+        for (auto edge : getAllEdges()) {
+            if (edgesAdded.find(edge) != edgesAdded.end()) {
+                continue;
+            }
+            auto orbit = getOrbit(edge);
+            for (auto e : orbit) {
+                assert(edgesAdded.find(e) == edgesAdded.end());
+                edgesAdded.insert(e);
+            }
+            allOrbits.emplace_back(orbit);
+        }
+        assert(edgesAdded.size() == (dimension << (dimension-1)));
+        return allOrbits;
+    }
+
+    std::vector<Node> getOrbit(const Node& representative) const {
         uint8_t type = nodeType[representative.getIndex()];
 
         std::vector<Node> orbit;
@@ -104,7 +145,7 @@ class OrbitInfo {
         return orbit;
     }
 
-    std::vector<Edge> getOrbit(const Edge& representative) {
+    std::vector<Edge> getOrbit(const Edge& representative) const {
         uint8_t atype = nodeType[representative.a.getIndex()];
         uint8_t btype = nodeType[representative.b.getIndex()];
 

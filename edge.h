@@ -16,15 +16,20 @@ class Edge {
     // Define less than operator to allow storing edges in ordered trees
     bool operator<(const Edge& other) const {
 
-        // Since the edges are unordered we first sort the nodes in each edge
+        // Since the edges are undirected we first sort the nodes in each edge
         auto myNodes = std::make_pair(a.getIndex(), b.getIndex());
         if (myNodes.second < myNodes.first)
             std::swap(myNodes.first, myNodes.second);
+
         auto otherNodes = std::make_pair(other.a.getIndex(), other.b.getIndex());
         if (otherNodes.second < otherNodes.first)
             std::swap(otherNodes.first, otherNodes.second);
 
         // Compare lexicographically
         return myNodes < otherNodes;
+    }
+
+    bool operator==(const Edge& other) const {
+        return (a == other.a && b == other.b) || (a == other.b && b == other.a);
     }
 };

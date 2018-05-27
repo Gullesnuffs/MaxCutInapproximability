@@ -16,21 +16,25 @@ class Evaluator {
 
     OrbitInfo orbitInfo;
 
-	T getValue(const PartialAssignment& partialAssignment, const Gadget& gadget) {
+    public:
+
+    Evaluator(const OrbitInfo orbitInfo) : orbitInfo(orbitInfo) {}
+
+    PartialAssignment optimalRelaxedExtension(const PartialAssignment& partialAssignment, const Gadget& gadget) {
 
         using namespace lemon;
 
+        // Construct nodes in the graph
         ListDigraph g;
         auto source = g.addNode();
         auto sink = g.addNode();
         std::vector<ListDigraph::Node> hypergraphNodes;
-
         for (long long index = 0; index < (1LL<<dimension); index++) {
             hypergraphNodes.emplace_back(g.addNode());
         }
 
+        // Compute the capacity of each edge in the graph
         ListDigraph::ArcMap<T> capacity(g);
-
         for (long long index = 0; index < (1LL<<dimension); index++) {
             Node node((uint32_t)index);
             for (unsigned direction = 0; direction < dimension; direction++) {
@@ -59,22 +63,23 @@ class Evaluator {
         }
 
         Preflow<ListDigraph, ListDigraph::ArcMap<T>> preflow(g, capacity, source, sink);
-        preflow.run();
+        preflow.runMinCut();
 
-        return preflow.flowValue();
+        std::map<Node, bool> assignment;
+        for (long long index = 0; index < (1LL<<dimension); index++) {
+            Node node((uint32_t)index);
+            assignment[Node((uint32_t)index)] = preflow.minCut(hypergraphNodes[index]);
+            if (partialAssignment.isAssigned(node)) {
+                assert(partialAssignment.getValue(node) == assignment[node]);
+            }
+        }
+
+        return PartialAssignment(assignment);
     }
 
-    public:
-
-    Evaluator(const OrbitInfo orbitInfo) : orbitInfo(orbitInfo) {}
-
-    std::pair<T, T> evaluateGadget(const Gadget& gadget) {
-
+    Rational<T> relaxedRandomCost(const Gadget& gadget) {
         T totalValue = 0;
-        T dictatorValue = 0;
-
-        std::map<uint32_t, T> orbitValue;
-        auto allOrbits = orbitInfo.getAllOrbits();
+        auto allOrbits = orbitInfo.getAllNodeOrbits();
         for (const auto& orbit : allOrbits) {
             Node representative = orbit[0];
             std::map<Node, bool> assignment;
@@ -83,15 +88,21 @@ class Evaluator {
                 assignment[-orbitInfo.chi(S)] = !assignment[orbitInfo.chi(S)];
             }
 
-            T value = getValue(PartialAssignment(assignment), gadget);
-            totalValue += orbit.size() * value;
-            orbitValue[orbit[0].getIndex()] = value;
+            auto extendedAssignment = optimalRelaxedExtension(PartialAssignment(assignment), gadget);
+            T value = 0;
 
-            if (representative == Node(0)) {
-                dictatorValue = value;
+            for (long long index = 0; index < (1LL<<dimension); index++) {
+                Node node((uint32_t)index);
+                for (unsigned direction = 0; direction < dimension; direction++) {
+                    auto destination = node.getNeighbour(direction);
+                    if (extendedAssignment.getValue(node) > extendedAssignment.getValue(destination)) {
+                        value += gadget.getWeight(Edge(node, destination));
+                    }
+                }
             }
+            
+            totalValue += orbit.size() * value;
         }
-
-        return std::make_pair(totalValue, dictatorValue * (1LL<<dimension));
+        return Rational<T>(totalValue, 1<<dimension);
     }
 };
